@@ -1,0 +1,27 @@
+{
+    "port": 8080,
+    "health_check_interval": "10s",
+    "routes": [
+        {
+            "path": "/api/auth",
+            "strip_prefix": true,
+            "backends": [
+                {"id": "auth-1", "url": "http://localhost:8001"}
+            ]
+        },
+        {
+            "path": "/api/products",
+            "strip_prefix": true,
+            "backends": [
+                {"id": "product-1", "url": "http://localhost:8002"}
+            ]
+        },
+        {
+            "path": "/api/payments",
+            "strip_prefix": true,
+            "backends": [
+                {"id": "payment-1", "url": "http://localhost:8003"}
+            ]
+        }
+    ]
+}

@@ -1,0 +1,14 @@
+[
+    {
+        "id": "auth",
+        "url": "http://localhost:8001"
+    },
+    {
+        "id": "product",
+        "url": "http://localhost:8002"
+    },
+    {
+        "id": "payment",
+        "url": "http://localhost:8003"
+    }
+]
