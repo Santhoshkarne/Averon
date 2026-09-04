@@ -11,11 +11,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/SaisrikarVollala/nebulagate/internal/config"
-	"github.com/SaisrikarVollala/nebulagate/internal/health"
-	"github.com/SaisrikarVollala/nebulagate/internal/metrics"
-	"github.com/SaisrikarVollala/nebulagate/internal/middleware"
-	"github.com/SaisrikarVollala/nebulagate/internal/router"
+	"github.com/karnesanthosh/Averon/internal/config"
+	"github.com/karnesanthosh/Averon/internal/health"
+	"github.com/karnesanthosh/Averon/internal/metrics"
+	"github.com/karnesanthosh/Averon/internal/middleware"
+	"github.com/karnesanthosh/Averon/internal/router"
 )
 
 // Version is set at build time via -ldflags.
@@ -42,11 +42,16 @@ func main() {
 	// Build routes from config
 	var routes []*router.Route
 	for _, rc := range cfg.Routes {
-		routes = append(routes, &router.Route{
+		route := &router.Route{
 			PathPrefix:  rc.Path,
 			StripPrefix: rc.StripPrefix,
 			Backends:    rc.Backends,
-		})
+		}
+		if rc.RateLimit != nil {
+			route.RateLimitRate = rc.RateLimit.RequestPerSecond
+			route.RateLimitBurst = rc.RateLimit.Burst
+		}
+		routes = append(routes, route)
 	}
 
 	// Create the router (initializes per-route load balancers)

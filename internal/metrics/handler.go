@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync/atomic"
 
-	"github.com/SaisrikarVollala/nebulagate/internal/server"
+	"github.com/karnesanthosh/Averon/internal/server"
 )
 
 func Hanlder(w http.ResponseWriter, r *http.Request) {

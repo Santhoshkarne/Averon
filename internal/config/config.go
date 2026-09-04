@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/SaisrikarVollala/nebulagate/internal/server"
+	"github.com/karnesanthosh/Averon/internal/server"
 )
 
 // RouteConfig represents a single route in the gateway configuration.
 type RouteConfig struct {
 	Path        string           `json:"path"`
 	StripPrefix bool             `json:"strip_prefix"`
+	RateLimit *RateLimitConfig   `json:"rate_limit"`
 	Backends    []*server.Server `json:"backends"`
 }
 
@@ -20,6 +21,13 @@ type GatewayConfig struct {
 	HealthCheckInterval string        `json:"health_check_interval"`
 	Routes              []RouteConfig `json:"routes"`
 }
+
+type RateLimitConfig struct{
+	RequestPerSecond float64 `json:"requests_per_second"`
+	Burst int `json:"burst"`
+}
+
+
 
 // LoadConfig loads the full gateway configuration from a JSON file.
 // This supports the new route-based config format.

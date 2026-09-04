@@ -6,8 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/SaisrikarVollala/nebulagate/internal/balancer"
-	"github.com/SaisrikarVollala/nebulagate/internal/server"
+	"github.com/karnesanthosh/Averon/internal/balancer"
+	"github.com/karnesanthosh/Averon/internal/server"
+	"github.com/karnesanthosh/Averon/internal/middleware"
 )
 
 // Route represents a path-to-backend mapping.
@@ -17,7 +18,11 @@ type Route struct {
 	PathPrefix  string             // e.g., "/api/auth"
 	StripPrefix bool               // if true, remove PathPrefix before forwarding
 	Backends    []*server.Server   // backend servers for this route
-	LB          *balancer.LoadBalancer // per-route load balancer
+	LB          *balancer.LoadBalancer  // per-route load balancer
+	RateLimitRate float64
+	RateLimitBurst int
+	limiter *middleware.IPRateLimiter
+	
 }
 
 // Router matches incoming requests to routes by path prefix
@@ -45,9 +50,21 @@ func NewRouter(routes []*Route) (*Router, error) {
 			return nil, err
 		}
 		route.LB = lb
+		if route.RateLimitRate >0 && route.RateLimitBurst >0{
+			route.limiter=middleware.NewIPRateLimiter(route.RateLimitRate,route.RateLimitBurst)
+			log.Printf("[ROUTER] Registered route: %s → %d backend(s) [rate limit: %.0f req/s]",
+
+				route.PathPrefix, len(route.Backends), route.RateLimitRate)
+		}else {
+			log.Printf("[ROUTER] Registered route: %s → %d backend(s) [no rate limit]",
+				route.PathPrefix, len(route.Backends))
+
+		}
 
 		log.Printf("[ROUTER] Registered route: %s → %d backend(s)", route.PathPrefix, len(route.Backends))
 	}
+
+	
 
 	return &Router{routes: routes}, nil
 }
@@ -71,6 +88,11 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if route == nil {
 		http.Error(w, "Not Found: no route matches this path", http.StatusNotFound)
 		return
+	}
+	if route.limiter != nil{
+		if !route.limiter.CheckHTTP(w,req) {
+			return
+		}	
 	}
 
 	// URL rewriting: strip the route prefix before forwarding to the backend.

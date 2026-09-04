@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"sync/atomic"
 
-	"github.com/SaisrikarVollala/nebulagate/internal/metrics"
-	"github.com/SaisrikarVollala/nebulagate/internal/server"
+	"github.com/karnesanthosh/Averon/internal/server"
+	"github.com/karnesanthosh/Averon/internal/metrics"
 )
 
 // ResponseWriter wraps http.ResponseWriter to capture the status code

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/SaisrikarVollala/nebulagate/internal/server"
+	"github.com/karnesanthosh/Averon/internal/server"
 )
 
 func CheckServer(s *server.Server) bool {
