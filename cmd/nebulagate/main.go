@@ -46,6 +46,7 @@ func main() {
 			PathPrefix:  rc.Path,
 			StripPrefix: rc.StripPrefix,
 			Backends:    rc.Backends,
+			Auth:        rc.Auth,
 		}
 		if rc.RateLimit != nil {
 			route.RateLimitRate = rc.RateLimit.RequestPerSecond

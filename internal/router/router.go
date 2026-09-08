@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/karnesanthosh/Averon/internal/balancer"
+	"github.com/karnesanthosh/Averon/internal/config"
 	"github.com/karnesanthosh/Averon/internal/server"
 	"github.com/karnesanthosh/Averon/internal/middleware"
 )
@@ -22,7 +23,7 @@ type Route struct {
 	RateLimitRate float64
 	RateLimitBurst int
 	limiter *middleware.IPRateLimiter
-	
+	Auth    *config.Authconfig
 }
 
 // Router matches incoming requests to routes by path prefix
@@ -89,33 +90,42 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Not Found: no route matches this path", http.StatusNotFound)
 		return
 	}
+	// 1. Rate Limiting Check
 	if route.limiter != nil{
 		if !route.limiter.CheckHTTP(w,req) {
 			return
 		}	
 	}
-
-	// URL rewriting: strip the route prefix before forwarding to the backend.
-	// e.g., /api/products/42 → /42 (the backend doesn't know about /api/products)
-	if route.StripPrefix {
-		originalPath := req.URL.Path
-		req.URL.Path = strings.TrimPrefix(req.URL.Path, route.PathPrefix)
-		if req.URL.Path == "" {
-			req.URL.Path = "/"
-		}
-		// Also rewrite RawPath if it's set (for encoded URLs)
-		if req.URL.RawPath != "" {
-			req.URL.RawPath = strings.TrimPrefix(req.URL.RawPath, route.PathPrefix)
-			if req.URL.RawPath == "" {
-				req.URL.RawPath = "/"
+	
+    //2. authetication
+	// Define the final target handler that performs URL rewriting and forwards the request
+	targetHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if route.StripPrefix {
+			originalPath := r.URL.Path
+			r.URL.Path = strings.TrimPrefix(r.URL.Path, route.PathPrefix)
+			if r.URL.Path == "" {
+				r.URL.Path = "/"
 			}
+			if r.URL.RawPath != "" {
+				r.URL.RawPath = strings.TrimPrefix(r.URL.RawPath, route.PathPrefix)
+				if r.URL.RawPath == "" {
+					r.URL.RawPath = "/"
+				}
+			}
+			log.Printf("[ROUTER] %s → %s (prefix stripped)", originalPath, r.URL.Path)
 		}
+		route.LB.ServeHTTP(w, r)
+	})
 
-		log.Printf("[ROUTER] %s → %s (prefix stripped)", originalPath, req.URL.Path)
+	// 2. Authentication Check 
+	if route.Auth != nil && route.Auth.Type != "" {
+		secureHandler := middleware.AuthMiddleware(route.Auth.Type, route.Auth.Secret, route.Auth.SkipPaths, targetHandler)
+		secureHandler.ServeHTTP(w, req)
+		return
 	}
 
-	// Delegate to the route's load balancer
-	route.LB.ServeHTTP(w, req)
+	// If no auth is configured, just execute the targetHandler
+	targetHandler.ServeHTTP(w, req)
 }
 
 // AllBackends returns all backend servers across all routes.

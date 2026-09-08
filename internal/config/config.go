@@ -12,6 +12,7 @@ type RouteConfig struct {
 	Path        string           `json:"path"`
 	StripPrefix bool             `json:"strip_prefix"`
 	RateLimit *RateLimitConfig   `json:"rate_limit"`
+	Auth *Authconfig `json:"auth"`
 	Backends    []*server.Server `json:"backends"`
 }
 
@@ -25,6 +26,13 @@ type GatewayConfig struct {
 type RateLimitConfig struct{
 	RequestPerSecond float64 `json:"requests_per_second"`
 	Burst int `json:"burst"`
+}
+
+type Authconfig struct {
+	Type string `json:"type"`
+	Secret string `json:"secret"`
+	SkipPaths []string `json:"skip_paths"`
+
 }
 
 
