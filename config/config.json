@@ -4,6 +4,7 @@
     "routes": [
         {
             "path": "/api/auth",
+            "strategy": "least_connections",
             "strip_prefix": true,
             "rate_limit":{
                 "requests_per_second":10,
@@ -15,13 +16,15 @@
         },
         {
             "path": "/api/products",
+            "strategy": "weighted_round_robin",
             "strip_prefix": true,
             "rate_limit":{
                 "requests_per_second":100,
                 "burst":50
             },
             "backends": [
-                {"id": "product-1", "url": "http://localhost:8002"}
+                {"id": "product-1", "url": "http://localhost:8002", "weight": 5},
+                {"id": "product-2", "url": "http://localhost:8004", "weight": 1}
             ]
         },
         {

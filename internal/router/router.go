@@ -19,6 +19,7 @@ type Route struct {
 	PathPrefix  string             // e.g., "/api/auth"
 	StripPrefix bool               // if true, remove PathPrefix before forwarding
 	Backends    []*server.Server   // backend servers for this route
+	Strategy    string
 	LB          *balancer.LoadBalancer  // per-route load balancer
 	RateLimitRate float64
 	RateLimitBurst int
@@ -46,7 +47,7 @@ func NewRouter(routes []*Route) (*Router, error) {
 
 	// Initialize load balancer for each route
 	for _, route := range routes {
-		lb, err := balancer.NewLoadBalancer(route.Backends)
+		lb, err := balancer.NewLoadBalancer(route.Backends,route.Strategy)
 		if err != nil {
 			return nil, err
 		}

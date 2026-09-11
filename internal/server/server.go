@@ -11,6 +11,7 @@ import (
 type Server struct {
 	ID           string                 `json:"id"`
 	URL          string                 `json:"url"`
+	Weight       int                    `json:"weight"`
 	ReverseProxy *httputil.ReverseProxy `json:"-"`
 
 	// alive is accessed from multiple goroutines (health checker + request handler),

@@ -11,6 +11,7 @@ import (
 type RouteConfig struct {
 	Path        string           `json:"path"`
 	StripPrefix bool             `json:"strip_prefix"`
+	Strategy string `json:"strategy"`
 	RateLimit *RateLimitConfig   `json:"rate_limit"`
 	Auth *Authconfig `json:"auth"`
 	Backends    []*server.Server `json:"backends"`
