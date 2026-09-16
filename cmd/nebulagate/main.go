@@ -16,6 +16,7 @@ import (
 	"github.com/karnesanthosh/Averon/internal/metrics"
 	"github.com/karnesanthosh/Averon/internal/middleware"
 	"github.com/karnesanthosh/Averon/internal/router"
+	"github.com/karnesanthosh/Averon/internal/logger"
 )
 
 // Version is set at build time via -ldflags.
@@ -56,6 +57,8 @@ func main() {
 		routes = append(routes, route)
 	}
 
+
+
 	// Create the router (initializes per-route load balancers)
 	rt, err := router.NewRouter(routes)
 	if err != nil {
@@ -78,6 +81,12 @@ func main() {
 		log.Printf("→ %s (%s) [%s]", s.ID, s.URL, status)
 	}
 
+	logger.Global.Info("config loaded", map[string]interface{}{
+		"routes":   len(cfg.Routes),
+		"backends": len(allBackends),
+		"port":     cfg.Port,
+	})
+	
 	log.Printf("Loaded %d route(s) with %d total backend(s)", len(cfg.Routes), len(allBackends))
 
 	// Parse health check interval
@@ -92,6 +101,7 @@ func main() {
 	// Create HTTP mux
 	mux := http.NewServeMux()
 	mux.HandleFunc("/metrics", metrics.NewHandler(allBackends))
+	mux.HandleFunc("/metrics/prometheus", metrics.PrometheusHandler(allBackends))
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
@@ -102,7 +112,12 @@ func main() {
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	httpServer := &http.Server{
 		Addr:    addr,
-		Handler: middleware.Recovery(mux),
+		Handler: middleware.Logging(
+			middleware.RequestID(
+				middleware.Recovery(mux),
+			),
+		),
+		
 	}
 
 	// Start NebulaGate

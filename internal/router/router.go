@@ -10,6 +10,7 @@ import (
 	"github.com/karnesanthosh/Averon/internal/config"
 	"github.com/karnesanthosh/Averon/internal/server"
 	"github.com/karnesanthosh/Averon/internal/middleware"
+	"github.com/karnesanthosh/Averon/internal/logger"
 )
 
 // Route represents a path-to-backend mapping.
@@ -54,13 +55,16 @@ func NewRouter(routes []*Route) (*Router, error) {
 		route.LB = lb
 		if route.RateLimitRate >0 && route.RateLimitBurst >0{
 			route.limiter=middleware.NewIPRateLimiter(route.RateLimitRate,route.RateLimitBurst)
-			log.Printf("[ROUTER] Registered route: %s → %d backend(s) [rate limit: %.0f req/s]",
-
-				route.PathPrefix, len(route.Backends), route.RateLimitRate)
+			logger.Global.Info("route registered", map[string]interface{}{
+		"path":       route.PathPrefix,
+		"backends":   len(route.Backends),
+		"rate_limit": route.RateLimitRate,
+		"strategy":   route.Strategy,
+	})
 		}else {
 			log.Printf("[ROUTER] Registered route: %s → %d backend(s) [no rate limit]",
-				route.PathPrefix, len(route.Backends))
-
+		 		route.PathPrefix, len(route.Backends))
+ 
 		}
 
 		log.Printf("[ROUTER] Registered route: %s → %d backend(s)", route.PathPrefix, len(route.Backends))
@@ -113,7 +117,10 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 					r.URL.RawPath = "/"
 				}
 			}
-			log.Printf("[ROUTER] %s → %s (prefix stripped)", originalPath, r.URL.Path)
+			logger.Global.Debug("prefix stripped", map[string]interface{}{
+		"original": originalPath,
+		"rewritten": r.URL.Path,
+	})
 		}
 		route.LB.ServeHTTP(w, r)
 	})

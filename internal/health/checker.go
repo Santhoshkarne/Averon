@@ -1,11 +1,12 @@
 package health
 
 import (
-	"log"
+	
 	"net/http"
 	"time"
 
 	"github.com/karnesanthosh/Averon/internal/server"
+	"github.com/karnesanthosh/Averon/internal/logger"
 )
 
 func CheckServer(s *server.Server) bool {
@@ -38,9 +39,15 @@ func StartHealthChecker(servers []*server.Server, interval time.Duration) {
 				s.SetAlive(alive)
 
 				if alive {
-					log.Printf("[HEALTH] %s is back UP", s.ID)
+					logger.Global.Info("backend health changed", map[string]interface{}{
+						"backend": s.ID,
+						"status":  "UP",
+					})
 				} else {
-					log.Printf("[HEALTH] %s is DOWN", s.ID)
+					logger.Global.Info("backend health changed", map[string]interface{}{
+						"backend": s.ID,
+						"status":  "DOWN",
+					})
 				}
 			}
 		}

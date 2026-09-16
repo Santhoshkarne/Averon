@@ -2,12 +2,13 @@ package balancer
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"sync/atomic"
 
 	"github.com/karnesanthosh/Averon/internal/server"
 	"github.com/karnesanthosh/Averon/internal/metrics"
+	"github.com/karnesanthosh/Averon/internal/logger"
+	
 )
 
 // ResponseWriter wraps http.ResponseWriter to capture the status code
@@ -71,7 +72,13 @@ func (lb *LoadBalancer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Forwarding request %s %s → %s (%s)", r.Method, r.URL.Path, srv.URL, srv.ID)
+	logger.Global.Info("Forwarding request", map[string]interface{}{
+		"method": r.Method,
+		"path": r.URL.Path,
+		"backend":srv.ID,
+		"url":srv.URL,	
+
+	})
 
 	// Track request to this backend server
 	atomic.AddUint64(&srv.Requests, 1)
