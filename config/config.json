@@ -6,10 +6,21 @@
             "path": "/api/auth",
             "strategy": "least_connections",
             "strip_prefix": true,
-            "rate_limit":{
-                "requests_per_second":10,
-                "burst":20
+            "rate_limit": {
+                "requests_per_second": 10,
+                "burst": 20
             },
+            "circuit_breaker": {
+                "failure_threshold": 5,
+                "success_threshold": 2,
+                "timeout": "30s"
+            },
+            "retry": {
+                "max_retries": 3,
+                "base_delay": "100ms",
+                "max_delay": "5s"
+            },
+            "request_timeout": "5s",
             "backends": [
                 {"id": "auth-1", "url": "http://localhost:8001"}
             ]
@@ -18,10 +29,21 @@
             "path": "/api/products",
             "strategy": "weighted_round_robin",
             "strip_prefix": true,
-            "rate_limit":{
-                "requests_per_second":100,
-                "burst":50
+            "rate_limit": {
+                "requests_per_second": 100,
+                "burst": 50
             },
+            "circuit_breaker": {
+                "failure_threshold": 5,
+                "success_threshold": 2,
+                "timeout": "30s"
+            },
+            "retry": {
+                "max_retries": 2,
+                "base_delay": "200ms",
+                "max_delay": "3s"
+            },
+            "request_timeout": "10s",
             "backends": [
                 {"id": "product-1", "url": "http://localhost:8002", "weight": 5},
                 {"id": "product-2", "url": "http://localhost:8004", "weight": 1}
@@ -30,10 +52,21 @@
         {
             "path": "/api/payments",
             "strip_prefix": true,
-            "rate_limit":{
-                "requests_per_second":10,
-                "burst":5
+            "rate_limit": {
+                "requests_per_second": 10,
+                "burst": 5
             },
+            "circuit_breaker": {
+                "failure_threshold": 3,
+                "success_threshold": 1,
+                "timeout": "60s"
+            },
+            "retry": {
+                "max_retries": 1,
+                "base_delay": "500ms",
+                "max_delay": "2s"
+            },
+            "request_timeout": "5s",
             "backends": [
                 {"id": "payment-1", "url": "http://localhost:8003"}
             ]

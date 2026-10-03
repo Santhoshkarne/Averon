@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/karnesanthosh/Averon/internal/balancer"
 	"github.com/karnesanthosh/Averon/internal/config"
@@ -26,6 +27,9 @@ type Route struct {
 	RateLimitBurst int
 	limiter *middleware.IPRateLimiter
 	Auth    *config.Authconfig
+	CircuitBreaker *config.CircuitBreakerConfig 
+	Retry          *config.RetryPolicyConfig    
+	RequestTimeout string 
 }
 
 // Router matches incoming requests to routes by path prefix
@@ -47,28 +51,73 @@ func NewRouter(routes []*Route) (*Router, error) {
 	})
 
 	// Initialize load balancer for each route
-	for _, route := range routes {
-		lb, err := balancer.NewLoadBalancer(route.Backends,route.Strategy)
+		for _, route := range routes {
+		// Parse circuit breaker config
+		var cbFailures, cbSuccesses int
+		var cbTimeout time.Duration
+		if route.CircuitBreaker != nil {
+			cbFailures = route.CircuitBreaker.FailureThreshold
+			cbSuccesses = route.CircuitBreaker.SuccessThreshold
+			if cbSuccesses == 0 {
+				cbSuccesses = 2 // default
+			}
+			t, err := time.ParseDuration(route.CircuitBreaker.Timeout)
+			if err != nil {
+				cbTimeout = 30 * time.Second // default
+			} else {
+				cbTimeout = t
+			}
+		}
+
+		// Parse retry config
+		var retryCfg *balancer.RetryConfig
+		if route.Retry != nil {
+			retryCfg = &balancer.RetryConfig{
+				MaxRetries: route.Retry.MaxRetries,
+			}
+			if bd, err := time.ParseDuration(route.Retry.BaseDelay); err == nil {
+				retryCfg.BaseDelay = bd
+			} else {
+				retryCfg.BaseDelay = 100 * time.Millisecond
+			}
+			if md, err := time.ParseDuration(route.Retry.MaxDelay); err == nil {
+				retryCfg.MaxDelay = md
+			} else {
+				retryCfg.MaxDelay = 5 * time.Second
+			}
+		}
+
+		// Parse request timeout
+		var reqTimeout time.Duration
+		if route.RequestTimeout != "" {
+			t, err := time.ParseDuration(route.RequestTimeout)
+			if err == nil {
+				reqTimeout = t
+			}
+		}
+
+		lb, err := balancer.NewLoadBalancer(route.Backends, route.Strategy, cbFailures, cbSuccesses, cbTimeout, retryCfg, reqTimeout)
 		if err != nil {
 			return nil, err
 		}
 		route.LB = lb
-		if route.RateLimitRate >0 && route.RateLimitBurst >0{
-			route.limiter=middleware.NewIPRateLimiter(route.RateLimitRate,route.RateLimitBurst)
+
+		if route.RateLimitRate > 0 && route.RateLimitBurst > 0 {
+			route.limiter = middleware.NewIPRateLimiter(route.RateLimitRate, route.RateLimitBurst)
 			logger.Global.Info("route registered", map[string]interface{}{
-		"path":       route.PathPrefix,
-		"backends":   len(route.Backends),
-		"rate_limit": route.RateLimitRate,
-		"strategy":   route.Strategy,
-	})
-		}else {
+				"path":       route.PathPrefix,
+				"backends":   len(route.Backends),
+				"rate_limit": route.RateLimitRate,
+				"strategy":   route.Strategy,
+			})
+		} else {
 			log.Printf("[ROUTER] Registered route: %s → %d backend(s) [no rate limit]",
-		 		route.PathPrefix, len(route.Backends))
- 
+				route.PathPrefix, len(route.Backends))
 		}
 
 		log.Printf("[ROUTER] Registered route: %s → %d backend(s)", route.PathPrefix, len(route.Backends))
 	}
+
 
 	
 

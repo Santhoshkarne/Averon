@@ -14,9 +14,22 @@ type RouteConfig struct {
 	Strategy string `json:"strategy"`
 	RateLimit *RateLimitConfig   `json:"rate_limit"`
 	Auth *Authconfig `json:"auth"`
+	CircuitBreaker *CircuitBreakerConfig `json:"circuit_breaker"`
+	Retry *RetryPolicyConfig `json:"retry"`
+	RequestTimeout string `json:"request_timeout"`
 	Backends    []*server.Server `json:"backends"`
 }
+type CircuitBreakerConfig struct{
+	FailureThreshold int `json:"failure_threshold"`
+	SuccessThreshold int `json:"success_threshold"`
+	Timeout string `json:"timeout"`
+}
 
+type RetryPolicyConfig struct{
+	MaxRetries int `json:"max_retries"`
+	BaseDelay string `json:"base_delay"`
+	MaxDelay string `json:"max_delay"`
+}
 // GatewayConfig is the top-level configuration for NebulaGate.
 type GatewayConfig struct {
 	Port                int           `json:"port"`

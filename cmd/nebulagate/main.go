@@ -49,6 +49,9 @@ func main() {
 			Backends:    rc.Backends,
 			Auth:        rc.Auth,
 			Strategy: rc.Strategy,
+			CircuitBreaker: rc.CircuitBreaker, // ← NEW
+			Retry:          rc.Retry,           // ← NEW
+			RequestTimeout: rc.RequestTimeout,  // ← NEW
 		}
 		if rc.RateLimit != nil {
 			route.RateLimitRate = rc.RateLimit.RequestPerSecond
